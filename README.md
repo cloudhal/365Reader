@@ -1,13 +1,14 @@
-# 365 Read
+# 365 Reader
 
-A compact Chrome extension popup RSS reader for Microsoft blog posts.
+A compact Chrome extension RSS reader for Microsoft 365 and Azure blog posts.
 
 ## Features
 
-- Latest Microsoft blog feed posts in a compact popup list
+- Latest Microsoft 365 and Azure blog feed posts in a compact popup list
 - Search by title and source
-- Top-right Help and Settings buttons
+- About and Settings buttons
 - Light, dark, and system theme modes
+- Infinite scroll with chunked loading
 - Tailwind CSS-based styling
 
 ## Development
