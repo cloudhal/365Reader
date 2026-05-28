@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>365 Read</title>
+  <link rel="stylesheet" href="assets/tailwind.css">
+</head>
+<body>
+  <main class="relative w-full overflow-hidden">
+    <div aria-hidden="true" class="pointer-events-none absolute inset-x-0 top-0 z-0 h-24 bg-gradient-to-br from-sky-500/20 via-cyan-400/10 to-transparent"></div>
+
+    <section class="relative z-10 border-b border-slate-200/80 px-3 pb-3 pt-3 dark:border-slate-800">
+      <div class="flex items-center gap-2">
+        <h1 class="text-sm font-semibold text-slate-900 dark:text-slate-100">365 Reader</h1>
+        <input id="search-input" type="search" placeholder="Search posts" aria-label="Search posts" class="ml-auto w-44 rounded-xl border border-slate-200/70 bg-white/70 px-3 py-1.5 text-sm text-slate-700 shadow-sm outline-none transition hover:border-sky-300/70 focus:border-sky-300/80 focus:ring-2 focus:ring-sky-400 dark:border-slate-700/60 dark:bg-slate-800/50 dark:text-slate-100">
+        <button id="refresh-btn" type="button" class="top-icon-button" aria-label="Refresh feeds" title="Refresh feeds">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-3.3-6.9" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 3v6h-6" />
+          </svg>
+        </button>
+        <button id="about-icon" type="button" class="top-icon-button" aria-label="About 365 Reader">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+            <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
+          </svg>
+        </button>
+        <button id="settings-icon" type="button" class="top-icon-button" aria-label="Open settings">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0"/>
+            <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115z"/>
+          </svg>
+        </button>
+      </div>
+    </section>
+
+    <section class="relative z-10 px-3 pb-3 pt-2">
+      <div id="status" class="mb-2 text-xs text-slate-500 dark:text-slate-400" aria-live="polite">Loading feeds...</div>
+      <div id="feed-filters" class="mb-3 flex flex-wrap gap-2" aria-label="Feed filters"></div>
+      <div id="feed-list" class="max-h-[460px] space-y-2 overflow-auto"></div>
+    </section>
+  </main>
+
+  <div id="about-modal" class="modal-shell" data-open="false" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="aboutModalLabel" aria-hidden="true">
+    <div class="w-full max-w-sm rounded-[24px] border border-slate-200 bg-white p-5 shadow-panel dark:border-slate-700 dark:bg-slate-900" data-modal-panel>
+      <div class="flex items-center justify-between">
+        <button type="button" class="top-icon-button" data-close-modal aria-label="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+        </svg>
+        </button>
+      </div>
+       <div class="pr-10 text-center">
+        <img src="images/logo_transparent_dark_200.png" alt="365 Reader logo for dark backgrounds" id="logo-dark" class="mx-auto mb-3 h-[30px]">
+        <img src="images/logo_transparent_light_200.png" alt="365 Reader logo for light backgrounds" id="logo-light" class="mx-auto mb-3 h-[30px] hidden">
+        <h2 id="aboutModalLabel" class="text-lg font-semibold text-slate-900 dark:text-slate-50">365 Read</h2>
+        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Copyright © 2026 Cloudrun Ltd</p>
+      </div>
+      <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">Read Microsoft community and product updates in one place.</p>
+      <div class="mt-5 space-y-5 text-left">
+        <section>
+          <h3 class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Help and Support</h3>
+          <div class="mt-3 flex flex-col gap-2">
+            <a href="https://techcommunity.microsoft.com/Blogs" target="_blank" rel="noreferrer" class="panel-button">Tech Community Blogs</a>
+            <a href="https://cloudrun.co.uk/software/365read/" target="_blank" rel="noreferrer" class="panel-button">User guide</a>
+          </div>
+        </section>
+        <section>
+          <h3 class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Version Information</h3>
+          <div class="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+            <p id="version"></p>
+            <p id="release-date"></p>
+            <p>Released under the <a href="https://mozilla.org/MPL/2.0/" target="_blank" rel="noreferrer" class="font-medium text-sky-700 hover:text-sky-800 dark:text-sky-300 dark:hover:text-sky-200">Mozilla Public License Version 2.0</a></p>
+            <ul id="changes-list" class="space-y-1"></ul>
+          </div>
+          <a href="https://github.com/cloudhal/365Read" class="panel-button mt-3" target="_blank" rel="noreferrer">GitHub</a>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div id="settings-modal" class="modal-shell" data-open="false" tabindex="-1" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="w-full max-w-sm rounded-[24px] border border-slate-200 bg-white shadow-panel dark:border-slate-700 dark:bg-slate-900" data-modal-panel>
+      <div class="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-2.5 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95">
+        <h2 class="text-base font-semibold text-slate-900 dark:text-slate-50">Settings</h2>
+        <button type="button" class="top-icon-button h-7 w-7" data-close-modal aria-label="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-3.5 w-3.5" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
+        <div>
+          <label for="theme" class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Theme</label>
+          <select id="theme" class="panel-select">
+            <option value="system">System</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </div>
+        <div>
+          <label for="max-items" class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Posts per scroll batch</label>
+          <input id="max-items" type="number" min="1" max="100" step="1" class="panel-select" aria-describedby="max-items-help">
+          <p id="max-items-help" class="mt-1 text-xs text-slate-500 dark:text-slate-400">Choose how many posts load initially and each time more items are loaded (1-100).</p>
+          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Initial posts per feed can vary by source feed page size (for example, Azure may start with fewer than TechCommunity feeds).</p>
+        </div>
+        <div>
+          <label for="max-additional-pages" class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Max extra pages (single feed)</label>
+          <input id="max-additional-pages" type="number" min="1" max="20" step="1" class="panel-select" aria-describedby="max-additional-pages-help">
+          <p id="max-additional-pages-help" class="mt-1 text-xs text-slate-500 dark:text-slate-400">Limit how many additional pages are fetched when scrolling a single selected feed.</p>
+        </div>
+        <div>
+          <p class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Feeds</p>
+          <div id="feed-toggle-list" class="space-y-2"></div>
+        </div>
+      </div>
+      <div class="sticky bottom-0 z-10 flex justify-end gap-2 border-t border-slate-200 bg-white/95 px-5 py-2.5 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95">
+        <button id="save-settings" type="button" class="panel-button">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

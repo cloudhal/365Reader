@@ -1,0 +1,8 @@
+{
+  "release_date": "2026-05-27",
+  "changes": [
+    "Initial release of 365 Reader.",
+    "Added Microsoft RSS feed reader popup.",
+    "Added settings, help modal, and dark mode support."
+  ]
+}
