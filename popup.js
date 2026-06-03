@@ -80,6 +80,13 @@ const FEEDS = [
     url: "https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=Microsoft365Copilot",
   },
   {
+    name: "M365 Roadmap",
+    filterLabel: "Roadmap",
+    pack: "core",
+    defaultEnabled: true,
+    url: "https://www.microsoft.com/releasecommunications/api/v2/m365/rss",
+  },
+  {
     name: "TechCommunity: Microsoft Sentinel Blog",
     filterLabel: "Sentinel",
     pack: "optional",

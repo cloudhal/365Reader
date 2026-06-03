@@ -2,7 +2,10 @@
   "release_date": "2026-05-27",
   "changes": [
     "Version 1.1.0",
+    "Added M365 Roadmap feed support.",
+    "Version 1.0.1",
     "Added collapse feature for filters and keyboard shortcuts.",
+    "Added M365 Roadmap feed support.",
     "Version 1.0.0",
     "Initial release of 365 Reader.",
     "Added Microsoft RSS feed reader popup.",
