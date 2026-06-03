@@ -17,6 +17,8 @@ const FEED_CACHE_KEY = "feedCacheV1";
 const FEED_CACHE_TTL_MS = 10 * 60 * 1000;
 const ACTIVE_FEED_FILTER_KEY = "activeFeedFilterV1";
 const ACTIVE_SEARCH_KEY = "activeSearchV1";
+const FEED_FILTER_PANEL_OPEN_KEY = "feedFilterPanelOpenV1";
+const ALL_FEEDS_FILTER = "all";
 const SCROLL_BOTTOM_THRESHOLD_PX = 24;
 const LOAD_MORE_INDICATOR_MS = 180;
 
@@ -163,7 +165,7 @@ const FEED_LABEL_BY_NAME = FEEDS.reduce((map, feed) => {
 
 let allPosts = [];
 let activeSearch = "";
-let activeFeedFilter = "all";
+let activeFeedFilters = [ALL_FEEDS_FILTER];
 let enabledFeeds = {};
 let lastFeedFailures = [];
 let lastLoadedFeedCount = 0;
@@ -234,6 +236,54 @@ function getFeedDisplayLabel(feedName) {
   }
 
   return String(feedName || "").replace(/^TechCommunity:\s*/i, "") || "Feed";
+}
+
+function normalizeActiveFeedFilters(value) {
+  if (Array.isArray(value)) {
+    const normalized = [...new Set(value.filter((item) => typeof item === "string" && item.trim().length > 0))];
+    return normalized.length > 0 ? normalized : [ALL_FEEDS_FILTER];
+  }
+
+  if (typeof value === "string" && value.trim().length > 0) {
+    return [value];
+  }
+
+  return [ALL_FEEDS_FILTER];
+}
+
+function areAllFeedsSelected() {
+  return activeFeedFilters.includes(ALL_FEEDS_FILTER);
+}
+
+function getSingleSelectedFeedName() {
+  if (areAllFeedsSelected()) {
+    return null;
+  }
+
+  return activeFeedFilters.length === 1 ? activeFeedFilters[0] : null;
+}
+
+async function applyFeedFilterSelection(value) {
+  if (value === ALL_FEEDS_FILTER) {
+    activeFeedFilters = [ALL_FEEDS_FILTER];
+  } else {
+    const nextSelection = activeFeedFilters.filter((feedName) => feedName !== ALL_FEEDS_FILTER);
+    const valueIndex = nextSelection.indexOf(value);
+
+    if (valueIndex >= 0) {
+      nextSelection.splice(valueIndex, 1);
+    } else {
+      nextSelection.push(value);
+    }
+
+    activeFeedFilters = nextSelection.length > 0 ? nextSelection : [ALL_FEEDS_FILTER];
+  }
+
+  await writeActiveFeedFilter(activeFeedFilters);
+  supplementalStatusNote = "";
+  visiblePostCount = postsPageSize;
+  renderFeedFilters();
+  renderPosts();
 }
 
 function setResolvedTheme(theme) {
@@ -445,14 +495,14 @@ function readActiveFeedFilter() {
   return new Promise((resolve) => {
     chrome.storage.local.get([ACTIVE_FEED_FILTER_KEY], (data) => {
       const selectedFilter = data[ACTIVE_FEED_FILTER_KEY];
-      resolve(typeof selectedFilter === "string" ? selectedFilter : "all");
+      resolve(normalizeActiveFeedFilters(selectedFilter));
     });
   });
 }
 
 function writeActiveFeedFilter(value) {
   return new Promise((resolve) => {
-    chrome.storage.local.set({ [ACTIVE_FEED_FILTER_KEY]: value }, () => resolve());
+    chrome.storage.local.set({ [ACTIVE_FEED_FILTER_KEY]: normalizeActiveFeedFilters(value) }, () => resolve());
   });
 }
 
@@ -471,6 +521,20 @@ function writeActiveSearch(value) {
   });
 }
 
+function readFeedFilterPanelOpen() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([FEED_FILTER_PANEL_OPEN_KEY], (data) => {
+      resolve(Boolean(data[FEED_FILTER_PANEL_OPEN_KEY]));
+    });
+  });
+}
+
+function writeFeedFilterPanelOpen(value) {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ [FEED_FILTER_PANEL_OPEN_KEY]: Boolean(value) }, () => resolve());
+  });
+}
+
 function isCacheFresh(cacheTimestamp) {
   if (!cacheTimestamp) {
     return false;
@@ -486,10 +550,9 @@ function resetVisiblePosts(maxItems) {
 
 function getFilteredPosts() {
   const query = activeSearch.trim().toLowerCase();
-  const feedFiltered =
-    activeFeedFilter === "all"
-      ? allPosts
-      : allPosts.filter((post) => post.source === activeFeedFilter);
+  const feedFiltered = areAllFeedsSelected()
+    ? allPosts
+    : allPosts.filter((post) => activeFeedFilters.includes(post.source));
 
   if (!query) {
     return feedFiltered;
@@ -584,12 +647,10 @@ async function loadFeeds(maxItems, forceRefresh = false) {
       });
     }
 
-    if (activeFeedFilter !== "all") {
-      const activeFeedNames = activeFeeds.map((feed) => feed.name);
-      if (!activeFeedNames.includes(activeFeedFilter)) {
-        activeFeedFilter = "all";
-        await writeActiveFeedFilter(activeFeedFilter);
-      }
+    if (!areAllFeedsSelected()) {
+      const validSelectedFeeds = activeFeedFilters.filter((feedName) => activeFeedNames.includes(feedName));
+      activeFeedFilters = validSelectedFeeds.length > 0 ? validSelectedFeeds : [ALL_FEEDS_FILTER];
+      await writeActiveFeedFilter(activeFeedFilters);
     }
 
     const failureSummary = lastFeedFailures
@@ -620,28 +681,38 @@ async function loadFeeds(maxItems, forceRefresh = false) {
 
 function renderFeedFilters() {
   const container = document.getElementById("feed-filters");
+  const toggleLabel = document.getElementById("feed-filters-toggle-label");
   container.innerHTML = "";
 
   const availableFeeds = getAvailableFeedFilters(allPosts);
-  const feedOptions = [{ name: "all", filterLabel: "All feeds" }, ...availableFeeds];
+  const feedOptions = [{ name: ALL_FEEDS_FILTER, filterLabel: "All feeds" }, ...availableFeeds];
+
+  let activeLabel = "All feeds";
+  if (!areAllFeedsSelected()) {
+    activeLabel = activeFeedFilters.length === 1
+      ? getFeedDisplayLabel(activeFeedFilters[0])
+      : `${activeFeedFilters.length} feeds`;
+  }
+
+  if (toggleLabel) {
+    toggleLabel.textContent = `Filter: ${activeLabel}`;
+  }
 
   feedOptions.forEach((feed) => {
     const value = feed.name;
     const label = feed.filterLabel;
+    const isSelected = value === ALL_FEEDS_FILTER
+      ? areAllFeedsSelected()
+      : !areAllFeedsSelected() && activeFeedFilters.includes(value);
 
     const chip = document.createElement("button");
     chip.type = "button";
     chip.className = "category-chip";
     chip.dataset.feed = value;
-    chip.setAttribute("aria-pressed", String(activeFeedFilter === value));
+    chip.setAttribute("aria-pressed", String(isSelected));
     chip.textContent = label;
-    chip.addEventListener("click", async () => {
-      activeFeedFilter = value;
-      await writeActiveFeedFilter(activeFeedFilter);
-      supplementalStatusNote = "";
-      visiblePostCount = postsPageSize;
-      renderFeedFilters();
-      renderPosts();
+    chip.addEventListener("click", () => {
+      applyFeedFilterSelection(value);
     });
     container.appendChild(chip);
   });
@@ -801,12 +872,13 @@ function renderPosts() {
     return;
   }
 
-  if (activeFeedFilter === "all") {
+  const singleSelectedFeed = getSingleSelectedFeedName();
+  if (!singleSelectedFeed) {
     appendListStateMessage("End of loaded posts.");
     return;
   }
 
-  if (feedHasMoreByName[activeFeedFilter] === false) {
+  if (feedHasMoreByName[singleSelectedFeed] === false) {
     appendListStateMessage("No more posts are available from this feed source.");
     return;
   }
@@ -889,9 +961,66 @@ document.addEventListener("DOMContentLoaded", () => {
   const searchInput = document.getElementById("search-input");
   const refreshButton = document.getElementById("refresh-btn");
   const feedList = document.getElementById("feed-list");
+  const feedFiltersToggle = document.getElementById("feed-filters-toggle");
+  const feedFiltersPanel = document.getElementById("feed-filters-panel");
+  const feedFiltersChevron = document.getElementById("feed-filters-chevron");
   const themeSelect = document.getElementById("theme");
   const maxItemsSelect = document.getElementById("max-items");
   const maxAdditionalPagesSelect = document.getElementById("max-additional-pages");
+
+  const setFeedFiltersExpanded = (expanded) => {
+    feedFiltersPanel.classList.toggle("hidden", !expanded);
+    feedFiltersToggle.setAttribute("aria-expanded", String(expanded));
+    feedFiltersChevron.style.transform = expanded ? "rotate(180deg)" : "rotate(0deg)";
+  };
+
+  feedFiltersToggle.addEventListener("click", async () => {
+    const expanded = feedFiltersToggle.getAttribute("aria-expanded") !== "true";
+    setFeedFiltersExpanded(expanded);
+    await writeFeedFilterPanelOpen(expanded);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    const target = event.target;
+    const isTypingContext =
+      target instanceof HTMLElement &&
+      (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
+
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || isTypingContext) {
+      return;
+    }
+
+    const key = event.key.toLowerCase();
+
+    if (key === "f") {
+      event.preventDefault();
+      const expanded = feedFiltersToggle.getAttribute("aria-expanded") !== "true";
+      setFeedFiltersExpanded(expanded);
+      writeFeedFilterPanelOpen(expanded);
+      return;
+    }
+
+    if (key === "a") {
+      event.preventDefault();
+      applyFeedFilterSelection(ALL_FEEDS_FILTER);
+      return;
+    }
+
+    if (/^[0-9]$/.test(key)) {
+      event.preventDefault();
+
+      if (key === "0") {
+        applyFeedFilterSelection(ALL_FEEDS_FILTER);
+        return;
+      }
+
+      const feedIndex = Number.parseInt(key, 10) - 1;
+      const availableFeeds = getAvailableFeedFilters(allPosts);
+      if (availableFeeds[feedIndex]) {
+        applyFeedFilterSelection(availableFeeds[feedIndex].name);
+      }
+    }
+  });
 
   function loadSettingsIntoForm() {
     chrome.storage.sync.get(DEFAULT_SETTINGS, (settings) => {
@@ -967,7 +1096,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const filteredPosts = getFilteredPosts();
     if (visiblePostCount >= filteredPosts.length) {
-      if (activeFeedFilter === "all") {
+      const singleSelectedFeed = getSingleSelectedFeedName();
+      if (!singleSelectedFeed) {
         return;
       }
 
@@ -975,7 +1105,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderPosts();
 
       window.setTimeout(async () => {
-        const loadedMore = await loadMoreForFeed(activeFeedFilter);
+        const loadedMore = await loadMoreForFeed(singleSelectedFeed);
         if (loadedMore) {
           const activeFeedNames = FEEDS
             .filter((feed) => enabledFeeds[feed.name])
@@ -1012,12 +1142,14 @@ document.addEventListener("DOMContentLoaded", () => {
   Promise.all([
     readActiveFeedFilter(),
     readActiveSearch(),
+    readFeedFilterPanelOpen(),
     new Promise((resolve) => {
       chrome.storage.sync.get(DEFAULT_SETTINGS, (settings) => resolve(settings));
     }),
-  ]).then(([storedFeedFilter, storedSearch, settings]) => {
-    activeFeedFilter = storedFeedFilter;
+  ]).then(([storedFeedFilter, storedSearch, feedFilterPanelOpen, settings]) => {
+    activeFeedFilters = normalizeActiveFeedFilters(storedFeedFilter);
     activeSearch = storedSearch;
+    setFeedFiltersExpanded(feedFilterPanelOpen);
     searchInput.value = storedSearch;
     enabledFeeds = normalizeEnabledFeeds(settings.enabledFeeds);
     themeSelect.value = settings.theme;

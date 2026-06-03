@@ -37,7 +37,17 @@
 
     <section class="relative z-10 px-3 pb-3 pt-2">
       <div id="status" class="mb-2 text-xs text-slate-500 dark:text-slate-400" aria-live="polite">Loading feeds...</div>
-      <div id="feed-filters" class="mb-3 flex flex-wrap gap-2" aria-label="Feed filters"></div>
+      <div class="mb-3">
+        <button id="feed-filters-toggle" type="button" class="panel-button w-full justify-between px-3 py-1.5 text-xs" aria-expanded="false" aria-controls="feed-filters-panel" title="Shortcuts: F toggle panel, A or 0 all feeds, 1-9 toggle feeds">
+          <span id="feed-filters-toggle-label">Filter: All feeds</span>
+          <svg id="feed-filters-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4" style="transition: transform 0.2s ease;" aria-hidden="true">
+            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06" clip-rule="evenodd" />
+          </svg>
+        </button>
+        <div id="feed-filters-panel" class="mt-2 hidden">
+          <div id="feed-filters" class="flex flex-wrap gap-2" aria-label="Feed filters"></div>
+        </div>
+      </div>
       <div id="feed-list" class="max-h-[460px] space-y-2 overflow-auto"></div>
     </section>
   </main>

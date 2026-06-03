@@ -1,14 +1,19 @@
 {
   "manifest_version": 3,
   "name": "365 Reader",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Read Microsoft blog RSS feeds in a compact popup.",
   "action": {
     "default_popup": "popup.html",
-    "default_icon": "icons/icon.png"
+    "default_icon": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+    }
   },
   "icons": {
-    "128": "icons/icon.png"
+    "128": "icons/icon128.png"
   },
   "permissions": [
     "storage"

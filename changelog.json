@@ -1,6 +1,9 @@
 {
   "release_date": "2026-05-27",
   "changes": [
+    "Version 1.1.0",
+    "Added collapse feature for filters and keyboard shortcuts.",
+    "Version 1.0.0",
     "Initial release of 365 Reader.",
     "Added Microsoft RSS feed reader popup.",
     "Added settings, help modal, and dark mode support."
