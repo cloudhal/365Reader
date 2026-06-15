@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "365 Reader",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "description": "Read Microsoft blog RSS feeds in a compact popup.",
   "action": {
     "default_popup": "popup.html",
@@ -22,7 +22,17 @@
     "service_worker": "background.js"
   },
   "host_permissions": [
-    "https://*/*"
+    "https://azure.microsoft.com/*",
+    "https://blogs.microsoft.com/*",
+    "https://blogs.windows.com/*",
+    "https://code.visualstudio.com/*",
+    "https://community.fabric.microsoft.com/*",
+    "https://devblogs.microsoft.com/*",
+    "https://github.blog/*",
+    "https://news.microsoft.com/*",
+    "https://news.xbox.com/*",
+    "https://techcommunity.microsoft.com/*",
+    "https://www.microsoft.com/*"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"

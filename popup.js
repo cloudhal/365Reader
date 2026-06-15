@@ -207,6 +207,7 @@ function getAvailableFeedFilters(posts) {
   return FEEDS.filter((feed) => feedSet.has(feed.blogName));
 }
 
+
 const ROADMAP_STATUS_KEYWORDS = [
   "Launched",
   "Rolling out",
@@ -262,8 +263,9 @@ function getFeedDisplayLabel(feedName) {
 
 function normalizeActiveFeedFilters(value) {
   if (Array.isArray(value)) {
-    const normalized = [...new Set(value.filter((item) => typeof item === "string" && item.trim().length > 0))];
-    return normalized.length > 0 ? normalized : [ALL_FEEDS_FILTER];
+    return [...new Set(
+      value.filter((item) => typeof item === "string" && item.trim().length > 0)
+    )];
   }
 
   if (typeof value === "string" && value.trim().length > 0) {
@@ -287,18 +289,30 @@ function getSingleSelectedFeedName() {
 
 async function applyFeedFilterSelection(value) {
   if (value === ALL_FEEDS_FILTER) {
-    activeFeedFilters = [ALL_FEEDS_FILTER];
-  } else {
-    const nextSelection = activeFeedFilters.filter((feedName) => feedName !== ALL_FEEDS_FILTER);
-    const valueIndex = nextSelection.indexOf(value);
-
-    if (valueIndex >= 0) {
-      nextSelection.splice(valueIndex, 1);
+    if (activeFeedFilters.includes(ALL_FEEDS_FILTER)) {
+      activeFeedFilters = [];
     } else {
-      nextSelection.push(value);
+      activeFeedFilters = [ALL_FEEDS_FILTER];
     }
+  } else {
+    const isAllMode = activeFeedFilters.includes(ALL_FEEDS_FILTER);
+    const isNoneMode = activeFeedFilters.length === 0;
 
-    activeFeedFilters = nextSelection.length > 0 ? nextSelection : [ALL_FEEDS_FILTER];
+    if (isAllMode) {
+      const availableFeedNames = getAvailableFeedFilters(allPosts)
+        .map((feed) => feed.blogName)
+        .filter(Boolean);
+      activeFeedFilters = availableFeedNames.filter((name) => name !== value);
+    } else if (isNoneMode) {
+      activeFeedFilters = [value];
+    } else {
+      const valueIndex = activeFeedFilters.indexOf(value);
+      if (valueIndex >= 0) {
+        activeFeedFilters = activeFeedFilters.filter((name) => name !== value);
+      } else {
+        activeFeedFilters = [...activeFeedFilters, value];
+      }
+    }
   }
 
   await writeActiveFeedFilter(activeFeedFilters);
@@ -616,6 +630,15 @@ function isCacheFresh(cacheTimestamp) {
   return Date.now() - cacheTimestamp <= FEED_CACHE_TTL_MS;
 }
 
+function resetAllSettings() {
+  chrome.storage.local.clear(() => {
+    chrome.storage.sync.clear(() => {
+      localStorage.clear();
+      location.reload();
+    });
+  });
+}
+
 function resetVisiblePosts(maxItems) {
   postsPageSize = normalizeMaxItems(maxItems);
   visiblePostCount = postsPageSize;
@@ -631,13 +654,16 @@ function getFilteredPosts() {
     return feedFiltered;
   }
 
-  return feedFiltered.filter(
-    (post) =>
-      post.title.toLowerCase().includes(query) ||
-      post.source.toLowerCase().includes(query) ||
-      getFeedDisplayLabel(post.source).toLowerCase().includes(query) ||
-      (post.author && post.author.toLowerCase().includes(query)) ||
-      (Array.isArray(post.categories) && post.categories.some((cat) => cat.toLowerCase().includes(query)))
+  const keywords = query.split(/\s+/).filter(Boolean);
+
+  return feedFiltered.filter((post) =>
+    keywords.every((keyword) =>
+      post.title.toLowerCase().includes(keyword) ||
+      post.source.toLowerCase().includes(keyword) ||
+      getFeedDisplayLabel(post.source).toLowerCase().includes(keyword) ||
+      (post.author && post.author.toLowerCase().includes(keyword)) ||
+      (Array.isArray(post.categories) && post.categories.some((cat) => cat.toLowerCase().includes(keyword)))
+    )
   );
 }
 
@@ -760,10 +786,14 @@ function renderFeedFilters() {
   container.innerHTML = "";
 
   const availableFeeds = getAvailableFeedFilters(allPosts);
-  const feedOptions = [{ name: ALL_FEEDS_FILTER, filterLabel: "All feeds" }, ...availableFeeds];
+  const feedOptions = [{ blogName: ALL_FEEDS_FILTER, filterLabel: "All feeds" }, ...availableFeeds];
+
+  const allFeedFiltersSelected = areAllFeedsSelected();
 
   let activeLabel = "All feeds";
-  if (!areAllFeedsSelected()) {
+  if (activeFeedFilters.length === 0) {
+    activeLabel = "None";
+  } else if (!allFeedFiltersSelected) {
     activeLabel = activeFeedFilters.length === 1
       ? getFeedDisplayLabel(activeFeedFilters[0])
       : `${activeFeedFilters.length} feeds`;
@@ -777,8 +807,8 @@ function renderFeedFilters() {
     const value = feed.blogName;
     const label = feed.filterLabel;
     const isSelected = value === ALL_FEEDS_FILTER
-      ? areAllFeedsSelected()
-      : !areAllFeedsSelected() && activeFeedFilters.includes(value);
+      ? allFeedFiltersSelected
+      : allFeedFiltersSelected || activeFeedFilters.includes(value);
 
     const chip = document.createElement("button");
     chip.type = "button";
@@ -799,7 +829,15 @@ function renderFeedToggles() {
   const container = document.getElementById("feed-toggle-list");
   container.innerHTML = "";
 
-  const collapsedCategories = new Set(JSON.parse(localStorage.getItem(CATEGORY_COLLAPSED_KEY) || "[]"));
+  const stored = localStorage.getItem(CATEGORY_COLLAPSED_KEY);
+  let collapsedCategories;
+
+  if (stored) {
+    collapsedCategories = new Set(JSON.parse(stored));
+  } else {
+    const categories = [...new Set(FEEDS.map((feed) => feed.category).filter(Boolean))];
+    collapsedCategories = new Set(categories);
+  }
 
   const saveCollapsedState = () => {
     localStorage.setItem(CATEGORY_COLLAPSED_KEY, JSON.stringify([...collapsedCategories]));
@@ -1183,21 +1221,6 @@ document.addEventListener("DOMContentLoaded", () => {
       applyFeedFilterSelection(ALL_FEEDS_FILTER);
       return;
     }
-
-    if (/^[0-9]$/.test(key)) {
-      event.preventDefault();
-
-      if (key === "0") {
-        applyFeedFilterSelection(ALL_FEEDS_FILTER);
-        return;
-      }
-
-      const feedIndex = Number.parseInt(key, 10) - 1;
-      const availableFeeds = getAvailableFeedFilters(allPosts);
-      if (availableFeeds[feedIndex]) {
-        applyFeedFilterSelection(availableFeeds[feedIndex].blogName);
-      }
-    }
   });
 
   function loadSettingsIntoForm() {
@@ -1263,6 +1286,12 @@ document.addEventListener("DOMContentLoaded", () => {
       loadFeeds(maxItems, true);
       settingsModal.close();
     });
+  });
+
+  document.getElementById("reset-settings").addEventListener("click", () => {
+    if (confirm("Reset all settings, filters, and cache to defaults? This cannot be undone.")) {
+      resetAllSettings();
+    }
   });
 
   refreshButton.addEventListener("click", () => {

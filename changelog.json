@@ -1,6 +1,13 @@
 {
   "release_date": "2026-05-27",
   "changes": [
+    "Version 2.0.0",
+    "Added service worker for background feed updates.",
+    "Added new feed sources.",
+    "Added new feed settings.",
+    "Categorised all feeds into groups.",
+    "Added new settings for feed groups.",
+    "",  
     "Version 1.2.0",
     "Focus cursor in search box when opened.",
     "Version 1.1.0",
