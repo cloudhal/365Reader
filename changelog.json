@@ -1,6 +1,8 @@
 {
   "release_date": "2026-05-27",
   "changes": [
+    "Version 1.2.0",
+    "Focus cursor in search box when opened.",
     "Version 1.1.0",
     "Added M365 Roadmap feed support.",
     "Version 1.0.1",

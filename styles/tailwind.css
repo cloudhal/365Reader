@@ -19,6 +19,10 @@
     @apply bg-slate-950 text-slate-100;
   }
 
+  body.popup-expanded {
+    @apply w-[800px] max-w-[800px];
+  }
+
   button,
   input,
   select {
@@ -66,7 +70,55 @@
   }
 
   .article-card {
-    @apply block rounded-2xl border border-slate-200 bg-white p-3 transition hover:border-sky-300 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-sky-500;
+    @apply rounded-2xl border border-slate-200 bg-white p-3 transition hover:border-sky-300 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-sky-500;
+  }
+
+  .article-card-expanded {
+    @apply border-sky-300 dark:border-sky-500;
+  }
+
+  .article-header {
+    @apply cursor-pointer;
+  }
+
+  .article-description {
+    @apply mt-2 border-t border-slate-100 pt-2 dark:border-slate-700;
+  }
+
+  .view-more-btn {
+    @apply mt-2 inline-flex items-center rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-700 transition hover:border-sky-300 hover:bg-sky-100 focus:outline-none focus:ring-2 focus:ring-sky-400 dark:border-sky-500/40 dark:bg-sky-500/10 dark:text-sky-200 dark:hover:border-sky-400 dark:hover:bg-sky-500/20;
+  }
+
+  .article-chevron {
+    transition: transform 0.2s ease;
+  }
+
+  .badge {
+    @apply mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide;
+  }
+
+  .badge-launched {
+    @apply border border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-600/50 dark:bg-emerald-500/10 dark:text-emerald-300;
+  }
+
+  .badge-rolling {
+    @apply border border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-600/50 dark:bg-amber-500/10 dark:text-amber-300;
+  }
+
+  .badge-dev {
+    @apply border border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-600/50 dark:bg-blue-500/10 dark:text-blue-300;
+  }
+
+  .badge-cancelled {
+    @apply border border-red-300 bg-red-50 text-red-700 dark:border-red-600/50 dark:bg-red-500/10 dark:text-red-300;
+  }
+
+  #search-input {
+    @apply w-36;
+  }
+
+  body.popup-expanded #search-input {
+    @apply w-44;
   }
 
   .category-chip {
