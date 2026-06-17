@@ -1,6 +1,8 @@
 {
   "release_date": "2026-05-27",
   "changes": [
+    "Version 2.0.1",
+    "Fix Education blog feed missing from manifest.",
     "Version 2.0.0",
     "Added service worker for background feed updates.",
     "Added new feed sources.",
