@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "365 Reader",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "Read Microsoft blog RSS feeds in a compact popup.",
   "action": {
     "default_popup": "popup.html",

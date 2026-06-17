@@ -207,12 +207,15 @@ function getAvailableFeedFilters(posts) {
   return FEEDS.filter((feed) => feedSet.has(feed.blogName));
 }
 
-
 const ROADMAP_STATUS_KEYWORDS = [
-  "Launched",
-  "Rolling out",
-  "In development",
-  "Cancelled",
+  "launched",
+  "rolling out",
+  "in development",
+  "cancelled",
+  "feature",
+  "in preview",
+  "preview",
+  "retirements",
 ];
 
 function getRoadmapStatus(categories) {
@@ -220,7 +223,10 @@ function getRoadmapStatus(categories) {
     return null;
   }
 
-  return categories.find((cat) => ROADMAP_STATUS_KEYWORDS.includes(cat)) || null;
+  const cat = categories.find((c) =>
+    ROADMAP_STATUS_KEYWORDS.includes(c.toLowerCase())
+  );
+  return cat || null;
 }
 
 function getStatusBadgeHtml(status) {
@@ -228,27 +234,41 @@ function getStatusBadgeHtml(status) {
     return "";
   }
 
+  const key = status.toLowerCase();
+
   const badgeClass =
-    status === "Launched"
+    key === "launched"
       ? "badge badge-launched"
-      : status === "Rolling out"
+      : key === "rolling out"
         ? "badge badge-rolling"
-        : status === "In development"
+        : key === "in development"
           ? "badge badge-dev"
-          : status === "Cancelled"
+          : key === "cancelled"
             ? "badge badge-cancelled"
-            : "badge";
+            : key === "feature"
+              ? "badge badge-feature"
+              : key === "in preview" || key === "preview"
+                ? "badge badge-preview"
+                : key === "retirements"
+                  ? "badge badge-retirements"
+                  : "badge";
 
   const icon =
-    status === "Launched"
+    key === "launched"
       ? "✓"
-      : status === "Rolling out"
+      : key === "rolling out"
         ? "⟳"
-        : status === "In development"
+        : key === "in development"
           ? "○"
-          : status === "Cancelled"
+          : key === "cancelled"
             ? "✕"
-            : "";
+            : key === "feature"
+              ? "✦"
+              : key === "in preview" || key === "preview"
+                ? "◷"
+                : key === "retirements"
+                  ? "⬇"
+                  : "";
 
   return `<span class="${badgeClass}">${icon ? `${icon} ` : ""}${status}</span>`;
 }
@@ -375,7 +395,7 @@ function stripHtml(html) {
 function parseCategories(item) {
   const cats = Array.from(item.querySelectorAll("category"));
   return cats
-    .map((cat) => (cat.textContent || "").trim())
+    .map((cat) => (cat.getAttribute("term") || cat.textContent || "").trim())
     .filter(Boolean);
 }
 
