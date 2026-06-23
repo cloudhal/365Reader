@@ -2,7 +2,7 @@
   "release_date": "2026-05-27",
   "changes": [
     "Version 2.1.0",
-    "Add Azure Service Update feeds, with status badges.",
+    "Added Azure Service Update feeds, with status badges.",
     "Version 2.0.1",
     "Fix Education blog feed missing from manifest.",
     "Version 2.0.0",
