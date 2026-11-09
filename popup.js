@@ -22,6 +22,7 @@ const POPUP_WIDTH_KEY = "popupExpandedV1";
 const ALL_FEEDS_FILTER = "all";
 const SCROLL_BOTTOM_THRESHOLD_PX = 24;
 const LOAD_MORE_INDICATOR_MS = 180;
+const SEARCH_WRITE_DELAY_MS = 250;
 
 class Feed {
   constructor(blogName, filterLabel, category, defaultEnabled, feedURL, blogURL) {
@@ -592,18 +593,41 @@ function readFeedCache() {
   });
 }
 
+// The startup read already returns the cache, so the first loadFeeds() call does not need a second
+// storage round trip. `null` is a valid preloaded value (known to be absent).
+let preloadedFeedCache = null;
+let preloadedFeedCacheKnown = false;
+
+function takePreloadedFeedCache() {
+  if (!preloadedFeedCacheKnown) {
+    return undefined;
+  }
+
+  preloadedFeedCacheKnown = false;
+  return preloadedFeedCache;
+}
+
 function writeFeedCache(payload) {
   return new Promise((resolve) => {
     chrome.storage.local.set({ [FEED_CACHE_KEY]: payload }, () => resolve());
   });
 }
 
-function readActiveFeedFilter() {
+// The popup restores its filter, search text, filter-panel state and the last feed cache in a single
+// chrome.storage.local read: every storage call is an IPC round trip that delays the first post.
+function readPopupState() {
   return new Promise((resolve) => {
-    chrome.storage.local.get([ACTIVE_FEED_FILTER_KEY], (data) => {
-      const selectedFilter = data[ACTIVE_FEED_FILTER_KEY];
-      resolve(normalizeActiveFeedFilters(selectedFilter));
-    });
+    chrome.storage.local.get(
+      [ACTIVE_FEED_FILTER_KEY, ACTIVE_SEARCH_KEY, FEED_FILTER_PANEL_OPEN_KEY, FEED_CACHE_KEY],
+      (data) => {
+        resolve({
+          feedFilter: normalizeActiveFeedFilters(data[ACTIVE_FEED_FILTER_KEY]),
+          search: typeof data[ACTIVE_SEARCH_KEY] === "string" ? data[ACTIVE_SEARCH_KEY] : "",
+          panelOpen: Boolean(data[FEED_FILTER_PANEL_OPEN_KEY]),
+          feedCache: data[FEED_CACHE_KEY] || null
+        });
+      }
+    );
   });
 }
 
@@ -613,27 +637,34 @@ function writeActiveFeedFilter(value) {
   });
 }
 
-function readActiveSearch() {
-  return new Promise((resolve) => {
-    chrome.storage.local.get([ACTIVE_SEARCH_KEY], (data) => {
-      const value = data[ACTIVE_SEARCH_KEY];
-      resolve(typeof value === "string" ? value : "");
-    });
-  });
-}
-
 function writeActiveSearch(value) {
   return new Promise((resolve) => {
     chrome.storage.local.set({ [ACTIVE_SEARCH_KEY]: value }, () => resolve());
   });
 }
 
-function readFeedFilterPanelOpen() {
-  return new Promise((resolve) => {
-    chrome.storage.local.get([FEED_FILTER_PANEL_OPEN_KEY], (data) => {
-      resolve(Boolean(data[FEED_FILTER_PANEL_OPEN_KEY]));
-    });
-  });
+let activeSearchWriteTimer = null;
+
+// One storage write once typing pauses, instead of an IPC round trip per keystroke.
+function scheduleActiveSearchWrite(value) {
+  if (activeSearchWriteTimer) {
+    clearTimeout(activeSearchWriteTimer);
+  }
+
+  activeSearchWriteTimer = setTimeout(() => {
+    activeSearchWriteTimer = null;
+    writeActiveSearch(value);
+  }, SEARCH_WRITE_DELAY_MS);
+}
+
+function flushActiveSearchWrite() {
+  if (!activeSearchWriteTimer) {
+    return;
+  }
+
+  clearTimeout(activeSearchWriteTimer);
+  activeSearchWriteTimer = null;
+  writeActiveSearch(activeSearch);
 }
 
 function writeFeedFilterPanelOpen(value) {
@@ -710,11 +741,15 @@ async function loadFeeds(maxItems, forceRefresh = false) {
     return;
   }
 
-  status.textContent = forceRefresh ? "Refreshing feeds..." : "Loading feeds...";
+  // Cached posts are painted immediately, even when the cache has expired, so an open never waits on
+  // the network with an empty list: a stale cache is shown and then refreshed in the background.
+  let showingCachedPosts = false;
 
   if (!forceRefresh) {
-    const cached = await readFeedCache();
-    if (cached && isCacheFresh(cached.savedAt) && cached.feedKey === getFeedCacheKey(activeFeedNames)) {
+    const preloaded = takePreloadedFeedCache();
+    const cached = preloaded === undefined ? await readFeedCache() : preloaded;
+
+    if (cached && cached.feedKey === getFeedCacheKey(activeFeedNames)) {
       feedItemsByName = cached.feedItems || {};
       rebuildAllPostsFromFeedItems(activeFeedNames);
       resetFeedPagingState(activeFeedNames);
@@ -722,8 +757,18 @@ async function loadFeeds(maxItems, forceRefresh = false) {
       status.textContent = `Showing ${allPosts.length} cached posts`;
       renderFeedFilters();
       renderPosts();
-      return;
+
+      if (isCacheFresh(cached.savedAt)) {
+        return;
+      }
+
+      showingCachedPosts = true;
+      status.textContent = `${status.textContent} • refreshing…`;
     }
+  }
+
+  if (!showingCachedPosts) {
+    status.textContent = forceRefresh ? "Refreshing feeds..." : "Loading feeds...";
   }
 
   try {
@@ -752,15 +797,17 @@ async function loadFeeds(maxItems, forceRefresh = false) {
 
     lastLoadedFeedCount = successfulResults.length;
 
-    feedItemsByName = successfulResults.reduce((map, result) => {
-      map[result.feedName] = result.items;
-      return map;
-    }, {});
-
-    resetFeedPagingState(activeFeedNames);
-    rebuildAllPostsFromFeedItems(activeFeedNames);
-
+    // Only replace what is on screen when at least one feed came back, so a failed refresh leaves the
+    // cached posts in place instead of emptying the list.
     if (successfulResults.length > 0) {
+      feedItemsByName = successfulResults.reduce((map, result) => {
+        map[result.feedName] = result.items;
+        return map;
+      }, {});
+
+      resetFeedPagingState(activeFeedNames);
+      rebuildAllPostsFromFeedItems(activeFeedNames);
+
       await writeFeedCache({
         savedAt: Date.now(),
         feedKey: getFeedCacheKey(activeFeedNames),
@@ -975,22 +1022,31 @@ function renderFeedToggles() {
   });
 }
 
+// Rebuilding the post list is the most expensive thing the popup does, and renderPosts() runs on
+// typing, scrolling and every load, so a list that would look identical is not rebuilt.
+let renderedPostsSignature = null;
+
+function postSignature(post) {
+  return [
+    post.guid || post.link,
+    post.title,
+    post.pubDate,
+    post.updated,
+    post.author,
+    post.source,
+    (post.description || "").length,
+    Array.isArray(post.categories) ? post.categories.join(",") : ""
+  ].join("\u0000");
+}
+
 function renderPosts() {
   const status = document.getElementById("status");
   const list = document.getElementById("feed-list");
-  list.innerHTML = "";
-
-  const appendListStateMessage = (message) => {
-    const state = document.createElement("div");
-    state.className =
-      "rounded-2xl border border-slate-200/70 bg-white/60 px-3 py-2 text-center text-xs font-medium text-slate-500 dark:border-slate-700/60 dark:bg-slate-800/40 dark:text-slate-300";
-    state.textContent = message;
-    list.appendChild(state);
-  };
-
   const filteredPosts = getFilteredPosts();
   const visiblePosts = filteredPosts.slice(0, visiblePostCount);
+  const isEmpty = visiblePosts.length === 0;
 
+  let statusText = null;
   if (allPosts.length > 0 || lastFeedFailures.length > 0) {
     const base = allPosts.length > 0
       ? `Showing ${visiblePosts.length} of ${filteredPosts.length} posts`
@@ -1001,15 +1057,57 @@ function renderPosts() {
     const failureNote = lastFeedFailures.length > 0
       ? ` • Failed: ${lastFeedFailures.map((failure) => failure.name).join(", ")}`
       : "";
-    status.textContent = `${base}${supplementalNote}${failureNote}`;
+    statusText = `${base}${supplementalNote}${failureNote}`;
   }
 
-  if (visiblePosts.length === 0) {
-    const emptyState = document.createElement("div");
-    emptyState.className =
+  // The row that follows the cards, if any.
+  let trailingMessage = null;
+  if (!isEmpty) {
+    if (isLoadingMore && visiblePosts.length < filteredPosts.length) {
+      trailingMessage = "Loading more...";
+    } else if (visiblePosts.length >= filteredPosts.length) {
+      const singleSelectedFeed = getSingleSelectedFeedName();
+      if (!singleSelectedFeed) {
+        trailingMessage = "End of loaded posts.";
+      } else if (feedHasMoreByName[singleSelectedFeed] === false) {
+        trailingMessage = "No more posts are available from this feed source.";
+      } else {
+        trailingMessage = "Scroll to load more posts.";
+      }
+    }
+  }
+
+  if (statusText !== null && status.textContent !== statusText) {
+    status.textContent = statusText;
+  }
+
+  const signature = [
+    isEmpty ? "empty" : "posts",
+    trailingMessage || "",
+    visiblePosts.map(postSignature).join("\u0001")
+  ].join("\u0002");
+
+  if (signature === renderedPostsSignature) {
+    return;
+  }
+
+  renderedPostsSignature = signature;
+  list.innerHTML = "";
+
+  const appendListStateMessage = (message) => {
+    const state = document.createElement("div");
+    state.className =
+      "rounded-2xl border border-slate-200/70 bg-white/60 px-3 py-2 text-center text-xs font-medium text-slate-500 dark:border-slate-700/60 dark:bg-slate-800/40 dark:text-slate-300";
+    state.textContent = message;
+    list.appendChild(state);
+  };
+
+  if (isEmpty) {
+    const emptyRow = document.createElement("div");
+    emptyRow.className =
       "rounded-2xl border border-slate-200/70 bg-white/60 px-3 py-6 text-center text-xs font-medium text-slate-500 dark:border-slate-700/60 dark:bg-slate-800/40 dark:text-slate-300";
-    emptyState.textContent = "No posts found";
-    list.appendChild(emptyState);
+    emptyRow.textContent = "No posts found";
+    list.appendChild(emptyRow);
     return;
   }
 
@@ -1098,28 +1196,9 @@ function renderPosts() {
     list.appendChild(postCard);
   });
 
-  if (isLoadingMore && visiblePosts.length < filteredPosts.length) {
-    appendListStateMessage("Loading more...");
-    return;
+  if (trailingMessage) {
+    appendListStateMessage(trailingMessage);
   }
-
-  const atListEnd = visiblePosts.length >= filteredPosts.length;
-  if (!atListEnd || filteredPosts.length === 0) {
-    return;
-  }
-
-  const singleSelectedFeed = getSingleSelectedFeedName();
-  if (!singleSelectedFeed) {
-    appendListStateMessage("End of loaded posts.");
-    return;
-  }
-
-  if (feedHasMoreByName[singleSelectedFeed] === false) {
-    appendListStateMessage("No more posts are available from this feed source.");
-    return;
-  }
-
-  appendListStateMessage("Scroll to load more posts.");
 }
 
 function decorateChange(change) {
@@ -1142,6 +1221,19 @@ function decorateChange(change) {
   return change;
 }
 
+// The changelog fetch, JSON parse and list building only matter once the About dialog is opened, so
+// they are not part of popup startup any more.
+let aboutInfoRequested = false;
+
+function populateAboutModalOnce() {
+  if (aboutInfoRequested) {
+    return;
+  }
+
+  aboutInfoRequested = true;
+  populateAboutModal();
+}
+
 function populateAboutModal() {
   const versionEl = document.getElementById("version");
   const releaseDateEl = document.getElementById("release-date");
@@ -1152,7 +1244,7 @@ function populateAboutModal() {
   }
 
   const manifest = chrome.runtime.getManifest();
-  versionEl.innerText = `Version: ${manifest.version}`;
+  versionEl.textContent = `Version: ${manifest.version}`;
 
   fetch(chrome.runtime.getURL("changelog.json"))
     .then((response) => {
@@ -1163,7 +1255,7 @@ function populateAboutModal() {
       return response.json();
     })
     .then((data) => {
-      releaseDateEl.innerText = data.release_date
+      releaseDateEl.textContent = data.release_date
         ? `Released on: ${data.release_date}`
         : "Release date unavailable";
 
@@ -1171,21 +1263,21 @@ function populateAboutModal() {
       const changes = Array.isArray(data.changes) ? data.changes : [];
       changes.forEach((change) => {
         const listItem = document.createElement("li");
-        listItem.innerText = decorateChange(String(change));
+        listItem.textContent = decorateChange(String(change));
         changesListEl.appendChild(listItem);
       });
 
       if (changes.length === 0) {
         const listItem = document.createElement("li");
-        listItem.innerText = "No changelog entries available.";
+        listItem.textContent = "No changelog entries available.";
         changesListEl.appendChild(listItem);
       }
     })
     .catch((error) => {
-      releaseDateEl.innerText = "Release date unavailable";
+      releaseDateEl.textContent = "Release date unavailable";
       changesListEl.innerHTML = "";
       const listItem = document.createElement("li");
-      listItem.innerText = "Could not load changelog.";
+      listItem.textContent = "Could not load changelog.";
       changesListEl.appendChild(listItem);
       console.error(error);
     });
@@ -1257,6 +1349,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   document.getElementById("about-icon").addEventListener("click", () => {
+    populateAboutModalOnce();
     aboutModal.open();
   });
 
@@ -1320,13 +1413,16 @@ document.addEventListener("DOMContentLoaded", () => {
     loadFeeds(maxItems, true);
   });
 
-  searchInput.addEventListener("input", async (event) => {
+  searchInput.addEventListener("input", (event) => {
     activeSearch = event.target.value || "";
-    await writeActiveSearch(activeSearch);
+    scheduleActiveSearchWrite(activeSearch);
     supplementalStatusNote = "";
     visiblePostCount = postsPageSize;
     renderPosts();
   });
+
+  // Closing the popup cancels the pending debounce, so the last search text is written on the way out.
+  window.addEventListener("pagehide", flushActiveSearchWrite);
 
   feedList.addEventListener("scroll", () => {
     if (isLoadingMore) {
@@ -1386,24 +1482,23 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   renderFeedFilters();
-  populateAboutModal();
   focusSearchInput();
 
   Promise.all([
     loadFeedsCatalog(),
-    readActiveFeedFilter(),
-    readActiveSearch(),
-    readFeedFilterPanelOpen(),
+    readPopupState(),
     new Promise((resolve) => {
       chrome.storage.sync.get(DEFAULT_SETTINGS, (settings) => resolve(settings));
     }),
-  ]).then(([loadedFeeds, storedFeedFilter, storedSearch, feedFilterPanelOpen, settings]) => {
+  ]).then(([loadedFeeds, popupState, settings]) => {
     FEEDS = loadedFeeds;
     rebuildFeedLookup();
-    activeFeedFilters = normalizeActiveFeedFilters(storedFeedFilter);
-    activeSearch = storedSearch;
-    setFeedFiltersExpanded(feedFilterPanelOpen);
-    searchInput.value = storedSearch;
+    activeFeedFilters = popupState.feedFilter;
+    activeSearch = popupState.search;
+    preloadedFeedCache = popupState.feedCache;
+    preloadedFeedCacheKnown = true;
+    setFeedFiltersExpanded(popupState.panelOpen);
+    searchInput.value = popupState.search;
     enabledFeeds = normalizeEnabledFeeds(settings.enabledFeeds);
     themeSelect.value = settings.theme;
     maxAdditionalPagesPerFeed = normalizeMaxAdditionalPages(settings.maxAdditionalPagesPerFeed);

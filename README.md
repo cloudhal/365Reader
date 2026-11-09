@@ -37,6 +37,7 @@ A compact Chrome extension RSS reader for Microsoft 365 and Azure blog posts.
 ### Performance & Reliability
 - Background service worker for CORS-free feed fetching
 - 10-minute local cache to reduce network requests
+- Cached posts render immediately on open, even after the cache expires, while the feeds refresh in the background
 - Feed failure reporting with per-source status messages
 - Graceful handling of feed permission issues
 

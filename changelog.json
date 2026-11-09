@@ -1,6 +1,12 @@
 {
-  "release_date": "2026-05-27",
+  "release_date": "2026-11-09",
   "changes": [
+    "Version 2.1.3",
+    "Improved popup startup by reading your saved filter, search and cache in one step instead of four.",
+    "Improved loading so cached posts appear immediately while the feeds refresh in the background.",
+    "Improved startup speed by loading the changelog only when About is opened.",
+    "Improved search responsiveness: results update instantly and your search is saved once you pause typing.",
+    "Fixed a failed refresh clearing the posts that were already loaded from the cache.",
     "Version 2.1.0",
     "Added Azure Service Update feeds, with status badges.",
     "Version 2.0.1",
