@@ -25,7 +25,7 @@ OpenAPI at Microsoft,OpenAPI ,Developer,FALSE,https://devblogs.microsoft.com/ope
 Microsoft Agent Framework,Agent Framework,Developer,FALSE,https://devblogs.microsoft.com/agent-framework/,https://devblogs.microsoft.com/agent-framework/feed/
 DirectX Developer Blog,DirectX Developer ,Developer,FALSE,https://devblogs.microsoft.com/directx,https://devblogs.microsoft.com/directx/feed
 Windows Command Line,Windows Command Line ,Developer,FALSE,https://devblogs.microsoft.com/commandline,https://devblogs.microsoft.com/commandline/feed
-ISE Developer Blog,ISE Developer ,Developer,FALSE,https://devblogs.microsoft.com/ise,https://devblogs.microsoft.com/ise/feed
+Frontier Engineering,Frontier Engineering,Developer,FALSE,https://devblogs.microsoft.com/frontier-engineering,https://devblogs.microsoft.com/frontier-engineering/feed/
 Engineering@Microsoft,Engineering,Developer,FALSE,https://devblogs.microsoft.com/engineering-at-microsoft,https://devblogs.microsoft.com/engineering-at-microsoft/feed
 Azure DevOps Blog,Azure DevOps ,DevOps,FALSE,https://devblogs.microsoft.com/devops,https://devblogs.microsoft.com/devops/feed
 GitHub Blog,GitHub ,DevOps,FALSE,https://github.blog,https://github.blog/feed
@@ -39,7 +39,7 @@ Microsoft Teams Blog,Teams ,Microsoft 365,TRUE,https://techcommunity.microsoft.c
 Microsoft SharePoint Blog,SharePoint ,Microsoft 365,TRUE,https://techcommunity.microsoft.com/t5/microsoft-sharepoint-blog/bg-p/SPBlog,https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=SPBlog
 Microsoft OneDrive Blog,OneDrive ,Microsoft 365,TRUE,https://techcommunity.microsoft.com/t5/onedrive-blog/bg-p/OneDriveBlog,techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=OneDriveBlog
 Microsoft Viva Blog,Viva ,Microsoft 365,TRUE,https://techcommunity.microsoft.com/t5/microsoft-viva-blog/bg-p/MicrosoftVivaBlog,https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=MicrosoftVivaBlog
-Microsoft 365 Copilot Blog,Copilot,Microsoft 365,TRUE,https://techcommunity.microsoft.com/category/Microsoft365Copilot/blog/Microsoft365CopilotBlog,https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=Microsoft365CopilotBlog
+Microsoft Copilot Blog,Copilot,Microsoft 365,TRUE,https://techcommunity.microsoft.com/category/microsoft-copilot/blog/microsoft-copilot-blog,https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=microsoft-copilot-blog
 Microsoft 365 Insider Blog,365 Insider,Microsoft 365,TRUE,https://techcommunity.microsoft.com/category/microsoft365/blog/Microsoft365InsiderBlog,https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=Microsoft365InsiderBlog
 Intune Customer Success,Intune,Microsoft 365,TRUE,https://techcommunity.microsoft.com/category/microsoftintune/blog/IntuneCustomerSuccess,https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=IntuneCustomerSuccess
 Exchange Team Blog,Exchange,Microsoft 365,TRUE,https://techcommunity.microsoft.com/category/Exchange/blog/Exchange,https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=Exchange
@@ -49,12 +49,11 @@ Power BI Updates Blog,Power BI ,Microsoft 365,FALSE,https://powerbi.microsoft.co
 Microsoft 365 Roadmap,M365 Roadmap,Microsoft 365,FALSE,https://www.microsoft.com/en-gb/microsoft-365/roadmap,https://www.microsoft.com/releasecommunications/api/v2/m365/rss
 Azure Service Updates,Azure Updates,Azure,FALSE,https://azure.microsoft.com/en-us/updates,https://www.microsoft.com/releasecommunications/api/v2/azure/rss
 FastTrack Blog,FastTrack,Microsoft 365,FALSE,https://techcommunity.microsoft.com/category/fasttrack/blog/fasttrackblog,https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=FastTrackBlog
-Microsoft Defender for Office 365,Defender for Office 365,Microsoft 365,TRUE,https://techcommunity.microsoft.com/category/microsoft-defender-for-office-365,https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=MicrosoftDefenderforOffice365Blog
 ,Partner ,Partner,FALSE,https://partner.microsoft.com/en-GB/blog/,No feed
 Partner news,Partner news,Partner,FALSE,https://techcommunity.microsoft.com/category/PartnerCommunity/blog/PartnerNews,https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=PartnerNews
 ,Defender,Security,FALSE,https://www.microsoft.com/security/blog,No feed
 ,MSRC ,Security,FALSE,https://msrc.microsoft.com/blog,No feed
-Microsoft Defender for Endpoint Blog,Defender for Endpoint,Security,FALSE,https://techcommunity.microsoft.com/category/microsoft-defender-for-endpoint/blog/microsoftdefenderatpblog,https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=MicrosoftDefenderATPBlog
+Microsoft Defender Blog,Defender,Security,TRUE,https://techcommunity.microsoft.com/category/microsoft-security/blog/microsoftthreatprotectionblog,https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=microsoftthreatprotectionblog
 Microsoft Defender for Cloud Blog,Defender for Cloud,Security,FALSE,https://techcommunity.microsoft.com/category/microsoft-defender-for-cloud/blog/microsoftdefendercloudblog,https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=MicrosoftDefenderCloudBlog
 Microsoft Security Community Blog,Security Community,Security,FALSE,https://techcommunity.microsoft.com/category/microsoft-security-product/blog/microsoft-security-blog,https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=microsoft-security-blog
 Microsoft Security Experts Blog,Security Experts,Security,FALSE,https://techcommunity.microsoft.com/t5/s/gxcuf89792/rss/board?board.id=MicrosoftSecurityExperts,
